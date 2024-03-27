@@ -350,3 +350,40 @@ func (r *RepositoryModule) Init() {
 		umount,
 	}
 }
+
+type AicpDirModule struct {
+	common.KubeModule
+	Skip bool
+}
+
+func (r *AicpDirModule) IsSkip() bool {
+	return r.Skip
+}
+
+func (r *AicpDirModule) Init() {
+	r.Name = "AicpDirModule"
+	r.Desc = "Config aicp dir"
+
+	configRootDir := &task.RemoteTask{
+		Name:     "ConfigAicpRootDir",
+		Desc:     "Config Aicp docker root dir",
+		Hosts:    r.Runtime.GetAllHosts(),
+		Action:   new(ConfigAicpRootDir),
+		Parallel: true,
+		Retry:    2,
+	}
+
+	configDataDir := &task.RemoteTask{
+		Name:     "ConfigAicpDataDir",
+		Desc:     "Config Aicp data dir",
+		Hosts:    r.Runtime.GetAllHosts(),
+		Action:   new(ConfigAicpDataDir),
+		Parallel: true,
+		Retry:    2,
+	}
+
+	r.Tasks = []task.Interface{
+		configRootDir,
+		configDataDir,
+	}
+}

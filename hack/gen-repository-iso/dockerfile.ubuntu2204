@@ -3,7 +3,7 @@ ARG TARGETARCH
 ARG DISTRO=ubuntu2204
 ARG OS_RELEASE=jammy
 ARG DIR=ubuntu-22.04-${TARGETARCH}-debs
-ARG PKGS=.common[],.debs[],.ubuntu[],.ubuntu2204[]
+ARG PKGS=.common[],.debs[],.ubuntu[],.ubuntu2204[],.aicp[]
 ARG BUILD_TOOLS="apt-transport-https software-properties-common ca-certificates curl wget gnupg dpkg-dev genisoimage"
 ENV DEBIAN_FRONTEND=noninteractive
 

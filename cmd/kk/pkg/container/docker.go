@@ -18,6 +18,7 @@ package container
 
 import (
 	"fmt"
+	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/core/util"
 	"path/filepath"
 	"strings"
 
@@ -93,6 +94,41 @@ func (s *SyncCriDockerdBinaries) Execute(runtime connector.Runtime) error {
 		false); err != nil {
 		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("install container runtime cri-dockerd binaries failed"))
 	}
+	return nil
+}
+
+
+type GenerateDockerConfig struct {
+	common.KubeAction
+}
+
+func (e *GenerateDockerConfig) Execute(runtime connector.Runtime) error {
+	template := templates.DockerConfig
+	dst:= filepath.Join("/etc/docker/", templates.DockerConfig.Name())
+	data := util.Data{
+		"Mirrors":               templates.Mirrors(e.KubeConf),
+		"InsecureRegistries":    templates.InsecureRegistries(e.KubeConf),
+		"DataRoot":              templates.DataRoot(e.KubeConf),
+		"BridgeIP":              templates.BridgeIP(e.KubeConf),
+		"AicpCluster":           templates.IsAicpCluster(e.KubeConf),
+		"DockerRootOverlaySize": templates.DockerRootOverlaySize(e.KubeConf, runtime),
+		"GpuNodeType":           templates.GpuNodeType(e.KubeConf, runtime),
+	}
+
+	templateStr, err := util.Render(template, data)
+	if err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("render template %s failed", template.Name()))
+	}
+
+	fileName := filepath.Join(runtime.GetHostWorkDir(), template.Name())
+	if err := util.WriteFile(fileName, []byte(templateStr)); err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("write file %s failed", fileName))
+	}
+
+	if err := runtime.GetRunner().SudoScp(fileName, dst); err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("scp file %s to remote %s failed", fileName, dst))
+	}
+
 	return nil
 }
 

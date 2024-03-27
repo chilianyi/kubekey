@@ -49,6 +49,7 @@ type Argument struct {
 	KubeConfig          string
 	Artifact            string
 	InstallPackages     bool
+	IsAicpCluster	    bool
 	ImagesDir           string
 	Namespace           string
 	DeleteCRI           bool

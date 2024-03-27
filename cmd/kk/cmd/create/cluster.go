@@ -45,6 +45,7 @@ type CreateClusterOptions struct {
 	DownloadCmd         string
 	Artifact            string
 	InstallPackages     bool
+	isAicpCluster 	    bool
 
 	localStorageChanged bool
 }
@@ -121,6 +122,7 @@ func (o *CreateClusterOptions) Run() error {
 		ContainerManager:    o.ContainerManager,
 		Artifact:            o.Artifact,
 		InstallPackages:     o.InstallPackages,
+		IsAicpCluster:       o.isAicpCluster,
 		Namespace:           o.CommonOptions.Namespace,
 	}
 
@@ -145,6 +147,7 @@ func (o *CreateClusterOptions) AddFlags(cmd *cobra.Command) {
 		`The user defined command to download the necessary binary files. The first param '%s' is output path, the second param '%s', is the URL`)
 	cmd.Flags().StringVarP(&o.Artifact, "artifact", "a", "", "Path to a KubeKey artifact")
 	cmd.Flags().BoolVarP(&o.InstallPackages, "with-packages", "", false, "install operation system packages by artifact")
+	cmd.Flags().BoolVarP(&o.isAicpCluster, "is-aicp-cluster", "", false, "Deploy a aicp cluster")
 }
 
 func completionSetting(cmd *cobra.Command) (err error) {

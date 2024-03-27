@@ -22,9 +22,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/lithammer/dedent"
-
+	kubekeyv1alpha2 "github.com/kubesphere/kubekey/v3/cmd/kk/apis/kubekey/v1alpha2"
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/common"
+	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/core/connector"
+	"github.com/lithammer/dedent"
 )
 
 var DockerConfig = template.Must(template.New("daemon.json").Parse(
@@ -44,6 +45,19 @@ var DockerConfig = template.Must(template.New("daemon.json").Parse(
   {{- end}}
   {{- if .BridgeIP }}
   "bip": {{ .BridgeIP }},
+  {{- end}}
+  {{- if .AicpCluster }}
+  "storage-driver": "overlay2",
+  "storage-opts": [ "overlay2.size={{ .DockerRootOverlaySize }}" ],
+  {{- end}}
+  {{- if and .AicpCluster (eq .GpuNodeType "nvidia") }}
+  "default-runtime": "nvidia",
+  "runtimes": {	
+    "nvidia": {
+      "path": "/usr/bin/nvidia-container-runtime",
+      "runtimeArgs": []
+    }
+  },
   {{- end}}
   "exec-opts": ["native.cgroupdriver=systemd"]
 }
@@ -73,8 +87,33 @@ func InsecureRegistries(kubeConf *common.KubeConf) string {
 	return insecureRegistries
 }
 
+func IsAicpCluster(kubeConf *common.KubeConf) bool {
+	return kubeConf.Arg.IsAicpCluster
+}
+
+func DockerRootOverlaySize(kubeConf *common.KubeConf, runtime connector.Runtime) string {
+	if kubeConf.Arg.IsAicpCluster {
+		currentHost := getCurrentHost(runtime)
+		if len(currentHost.DockerOverlaySize) > 0 {
+			return currentHost.DockerOverlaySize
+		}
+	}
+	return common.AicpDefaultDockerOverlaySize
+}
+
+func GpuNodeType(kubeConf *common.KubeConf, runtime connector.Runtime) string {
+	if kubeConf.Arg.IsAicpCluster {
+		currentHost := getCurrentHost(runtime)
+		return currentHost.GpuType
+	}
+	return ""
+}
+
 func DataRoot(kubeConf *common.KubeConf) string {
 	var dataRoot string
+	if kubeConf.Arg.IsAicpCluster {
+		dataRoot = fmt.Sprintf("\"%s\"", common.AicpDockerRootDir)
+	}
 	if kubeConf.Cluster.Registry.DataRoot != "" {
 		dataRoot = fmt.Sprintf("\"%s\"", kubeConf.Cluster.Registry.DataRoot)
 	}
@@ -103,4 +142,17 @@ func BridgeIP(kubeConf *common.KubeConf) string {
 	}
 
 	return bip
+}
+
+// Get current host information
+func getCurrentHost(runtime connector.Runtime) *kubekeyv1alpha2.KubeHost {
+	currentHost := runtime.RemoteHost().GetName()
+	hosts := runtime.GetHostsByRole(common.K8s)
+	for _, host := range hosts {
+		kubeHost := host.(*kubekeyv1alpha2.KubeHost)
+		if kubeHost.Name == currentHost {
+			return kubeHost
+		}
+	}
+	return nil
 }

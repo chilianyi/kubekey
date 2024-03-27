@@ -97,4 +97,10 @@ const (
 
 	// Artifact pipeline
 	Artifact = "artifact"
+
+	// Aicp Config
+	AicpDockerRootDir = "/aicp/dockerRootDir"
+	AicpZpoolName = "zfspv-pool"
+	AicpDefaultDockerOverlaySize = "50G"
+	AicpSupportedSystemVersions = "22.04,"
 )

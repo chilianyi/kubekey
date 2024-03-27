@@ -23,6 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	kubekeyv1alpha2 "github.com/kubesphere/kubekey/v3/cmd/kk/apis/kubekey/v1alpha2"
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/bootstrap/os/repository"
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/common"
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/core/connector"
@@ -581,4 +582,153 @@ func (n *NodeConfigureNtpServer) Execute(runtime connector.Runtime) error {
 	}
 
 	return nil
+}
+
+type ConfigAicpRootDir struct {
+	common.KubeAction
+}
+
+func (g *ConfigAicpRootDir) Execute(runtime connector.Runtime) error {
+	// Get current host information
+	currentHost := getCurrentHost(runtime)
+	if currentHost == nil {
+		return errors.New("current host not found")
+	}
+
+	if  currentHost.DockerRootDisk == "" {
+		return nil
+	}
+
+	// Create directory
+	mkdirCmd := fmt.Sprintf("mkdir -p %s", common.AicpDockerRootDir)
+	_, err := runtime.GetRunner().SudoCmd(mkdirCmd, false)
+	if err != nil {
+		return errors.Wrap(err, "failed to create aicp directory")
+	}
+
+	if !checkFileSystemFormattedAsXfs(runtime, currentHost.DockerRootDisk) {
+		// Format file system
+		formatCmd := fmt.Sprintf("mkfs.xfs -f %s", currentHost.DockerRootDisk)
+		_, err := runtime.GetRunner().SudoCmd(formatCmd, false)
+		if err != nil {
+			return errors.Wrap(err, "failed to format disk with xfs")
+		}
+	}
+
+	if !checkMountExists(runtime, common.AicpDockerRootDir) {
+		// Mount file system
+		mountCmd := fmt.Sprintf("mount -o prjquota %s %s", currentHost.DockerRootDisk, common.AicpDockerRootDir)
+		_, err = runtime.GetRunner().SudoCmd(mountCmd, false)
+		if err != nil {
+			return errors.Wrap(err, "failed to mount prjquota")
+		}
+	}
+
+	if !checkFstabEntryExists(runtime, currentHost.DockerRootDisk) {
+		// Get UUID of file system
+		uuid, err := getDeviceUUID(runtime, currentHost.DockerRootDisk)
+		if err != nil || uuid == "" {
+			return errors.Wrap(err, "failed to get UUID")
+		}
+
+		// Add mount information to /etc/fstab
+		fstabCmd := fmt.Sprintf("echo 'UUID=%s %s xfs defaults,prjquota 0 1' >> /etc/fstab", uuid, common.AicpDockerRootDir)
+		_, err = runtime.GetRunner().SudoCmd(fstabCmd, false)
+		if err != nil {
+			return errors.Wrap(err, "failed to add fstab entry")
+		}
+	}
+
+	return nil
+}
+
+type ConfigAicpDataDir struct {
+	common.KubeAction
+}
+
+func (g *ConfigAicpDataDir) Execute(runtime connector.Runtime) error {
+	// Get current host information
+	currentHost := getCurrentHost(runtime)
+	if currentHost == nil {
+		return errors.New("current host not found")
+	}
+
+	if currentHost.ZfsDataDisk == nil || len(currentHost.ZfsDataDisk) == 0 {
+		return nil
+	}
+
+	if !isZfsPoolCreated(runtime, common.AicpZpoolName) {
+		zfsCmd := fmt.Sprintf("zpool create %s %s", common.AicpZpoolName, strings.Join(currentHost.ZfsDataDisk, " "))
+		_, err := runtime.GetRunner().SudoCmd(zfsCmd, false)
+		if err != nil {
+			return errors.Wrap(err, "failed to create zpool")
+		}
+	}
+
+	return nil
+}
+
+func isZfsPoolCreated(runtime connector.Runtime, aicpZpoolName string) bool {
+	cmd := "zpool list"
+	out, err := runtime.GetRunner().SudoCmd(cmd, false)
+	if err != nil {
+		// Handle error
+		return false
+	}
+
+	return strings.Contains(out, aicpZpoolName)
+}
+
+// Get current host information
+func getCurrentHost(runtime connector.Runtime) *kubekeyv1alpha2.KubeHost {
+	currentHost := runtime.RemoteHost().GetName()
+	hosts := runtime.GetHostsByRole(common.K8s)
+	for _, host := range hosts {
+		kubeHost := host.(*kubekeyv1alpha2.KubeHost)
+		if kubeHost.Name == currentHost {
+			return kubeHost
+		}
+	}
+	return nil
+}
+
+// Check if device is formatted as xfs
+func checkFileSystemFormattedAsXfs(runtime connector.Runtime, device string) bool {
+	formatCmd := fmt.Sprintf("blkid -s TYPE -o value %s", device)
+	out, err := runtime.GetRunner().SudoCmd(formatCmd, false)
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(out) == "xfs"
+}
+
+// Check if file dir is mounted
+func checkMountExists(runtime connector.Runtime, dir string) bool {
+	mountCmd := fmt.Sprintf("mountpoint -q %s", dir)
+	_, err := runtime.GetRunner().SudoCmd(mountCmd, false)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+// Check if entry is added to /etc/fstab
+func checkFstabEntryExists(runtime connector.Runtime, device string) bool {
+	fstabCmd := "cat /etc/fstab"
+	fstabContent, err := runtime.GetRunner().SudoCmd(fstabCmd, false)
+	if err != nil {
+		// Handle error
+		return false
+	}
+	return strings.Contains(fstabContent, device)
+}
+
+// Get UUID of device
+func getDeviceUUID(runtime connector.Runtime, device string) (string, error) {
+	getUuidCmd := fmt.Sprintf("blkid -s UUID -o value %s", device)
+	uuid, err := runtime.GetRunner().SudoCmd(getUuidCmd, false)
+	if err != nil || uuid == "" {
+		return "", err
+	}
+	return strings.TrimSpace(uuid), nil
 }

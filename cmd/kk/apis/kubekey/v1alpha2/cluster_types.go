@@ -69,6 +69,10 @@ type HostCfg struct {
 
 	// Labels defines the kubernetes labels for the node.
 	Labels map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`
+	DockerRootDisk string `yaml:"dockerRootDisk,omitempty" json:"dockerRootDisk,omitempty"`
+	ZfsDataDisk	[]string `yaml:"zfsDataDisk,omitempty" json:"zfsDataDisk,omitempty"`
+	GpuType string `yaml:"gpuType,omitempty" json:"gpuType,omitempty"`
+	DockerOverlaySize string `yaml:"dockerOverlaySize,omitempty" json:"dockerOverlaySize,omitempty"`
 }
 
 // ControlPlaneEndpoint defines the control plane endpoint information for cluster.
@@ -193,6 +197,10 @@ func (cfg *ClusterSpec) GroupHosts() map[string][]*KubeHost {
 type KubeHost struct {
 	*connector.BaseHost
 	Labels map[string]string
+	DockerRootDisk string
+	ZfsDataDisk	[]string
+	GpuType string
+	DockerOverlaySize string
 }
 
 func toHosts(cfg HostCfg) *KubeHost {
@@ -211,6 +219,10 @@ func toHosts(cfg HostCfg) *KubeHost {
 	kubeHost := &KubeHost{
 		BaseHost: host,
 		Labels:   cfg.Labels,
+		DockerRootDisk: cfg.DockerRootDisk,
+		ZfsDataDisk: cfg.ZfsDataDisk,
+		GpuType: cfg.GpuType,
+		DockerOverlaySize: cfg.DockerOverlaySize,
 	}
 	return kubeHost
 }

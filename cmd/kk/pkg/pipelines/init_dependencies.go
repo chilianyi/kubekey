@@ -32,10 +32,12 @@ func NewInitDependenciesPipeline(runtime *common.KubeRuntime) error {
 
 	m := []module.Module{
 		&precheck.GreetingsModule{},
+		&precheck.NodeSystemPreCheckModule{},
 		&artifact.UnArchiveModule{Skip: noArtifact},
 		&os.RepositoryModule{Skip: noArtifact},
 		&os.RepositoryOnlineModule{Skip: !noArtifact},
 		&filesystem.ChownWorkDirModule{},
+		&os.AicpDirModule{Skip: !runtime.Arg.IsAicpCluster},
 		&customscripts.CustomScriptsModule{Phase: "PreInstall", Scripts: runtime.Cluster.System.PreInstall},
 	}
 

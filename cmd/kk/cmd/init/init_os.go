@@ -29,6 +29,7 @@ type InitOsOptions struct {
 	CommonOptions  *options.CommonOptions
 	ClusterCfgFile string
 	Artifact       string
+	isAicpCluster  bool
 }
 
 func NewInitOsOptions() *InitOsOptions {
@@ -55,9 +56,10 @@ func NewCmdInitOs() *cobra.Command {
 
 func (o *InitOsOptions) Run() error {
 	arg := common.Argument{
-		FilePath: o.ClusterCfgFile,
-		Debug:    o.CommonOptions.Verbose,
-		Artifact: o.Artifact,
+		FilePath:      o.ClusterCfgFile,
+		Debug:         o.CommonOptions.Verbose,
+		Artifact:      o.Artifact,
+		IsAicpCluster: o.isAicpCluster,
 	}
 	return pipelines.InitDependencies(arg)
 }
@@ -65,4 +67,5 @@ func (o *InitOsOptions) Run() error {
 func (o *InitOsOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.ClusterCfgFile, "filename", "f", "", "Path to a configuration file")
 	cmd.Flags().StringVarP(&o.Artifact, "artifact", "a", "", "Path to a KubeKey artifact")
+	cmd.Flags().BoolVarP(&o.isAicpCluster, "is-aicp-cluster", "", false, "Init a aicp cluster os")
 }

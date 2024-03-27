@@ -111,16 +111,7 @@ func InstallDocker(m *InstallContainerModule) []task.Interface {
 			&kubernetes.NodeInCluster{Not: true},
 			&DockerExist{Not: true},
 		},
-		Action: &action.Template{
-			Template: templates.DockerConfig,
-			Dst:      filepath.Join("/etc/docker/", templates.DockerConfig.Name()),
-			Data: util.Data{
-				"Mirrors":            templates.Mirrors(m.KubeConf),
-				"InsecureRegistries": templates.InsecureRegistries(m.KubeConf),
-				"DataRoot":           templates.DataRoot(m.KubeConf),
-				"BridgeIP":           templates.BridgeIP(m.KubeConf),
-			},
-		},
+		Action: new(GenerateDockerConfig),
 		Parallel: true,
 	}
 

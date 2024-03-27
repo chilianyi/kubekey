@@ -86,6 +86,33 @@ func (n *NodePreCheckModule) Init() {
 	}
 }
 
+
+type NodeSystemPreCheckModule struct {
+	common.KubeModule
+	Skip bool
+}
+
+func (n *NodeSystemPreCheckModule) IsSkip() bool {
+	return n.Skip
+}
+
+func (n *NodeSystemPreCheckModule) Init() {
+	n.Name = "NodeSystemPreCheckModule"
+	n.Desc = "Do pre-check on cluster nodes"
+
+	preCheck := &task.RemoteTask{
+		Name:  "NodeSystemPreCheck",
+		Desc:  "A node system pre-check on nodes",
+		Hosts: n.Runtime.GetAllHosts(),
+		Action:   new(NodeSystemPreCheck),
+		Parallel: true,
+	}
+
+	n.Tasks = []task.Interface{
+		preCheck,
+	}
+}
+
 type ClusterPreCheckModule struct {
 	common.KubeModule
 	SkipDependencyCheck bool
