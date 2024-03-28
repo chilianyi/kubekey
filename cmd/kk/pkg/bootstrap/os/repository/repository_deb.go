@@ -18,9 +18,9 @@ package repository
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/core/connector"
+	"strings"
+	"time"
 )
 
 type Debian struct {
@@ -83,8 +83,24 @@ func (d *Debian) Install(runtime connector.Runtime, pkg ...string) error {
 	}
 
 	str := strings.Join(pkg, " ")
-	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("apt install -y %s", str), true); err != nil {
-		return err
+	installCmd := fmt.Sprintf("timeout 600 apt install -y %s", str)
+	maxRetries := 5
+	for attempts := 1; attempts <= maxRetries; attempts++ {
+		if _, err := runtime.GetRunner().SudoCmd(installCmd, true); err != nil {
+			// If an error occurs and we have not reached the max retries, wait and retry
+			if attempts < maxRetries {
+				killCmd := "ps aux | grep \"apt install\" | grep -v grep | awk '{print $2}' | xargs -r kill -9"
+				runtime.GetRunner().SudoCmd(killCmd, true)
+				repairCmd := "dpkg --configure -a"
+				runtime.GetRunner().SudoCmd(repairCmd, true)
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			// If we have reached the max retries, return the last error
+			return err
+		}
+		// If the command was successful, break out of the loop
+		break
 	}
 	return nil
 }
