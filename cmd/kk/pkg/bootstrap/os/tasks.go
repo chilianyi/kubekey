@@ -624,7 +624,7 @@ func (g *ConfigAicpRootDir) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	if !checkFstabEntryExists(runtime, currentHost.DockerRootDisk) {
+	if !checkFstabEntryExists(runtime, common.AicpDockerRootDir) {
 		// Get UUID of file system
 		uuid, err := getDeviceUUID(runtime, currentHost.DockerRootDisk)
 		if err != nil || uuid == "" {

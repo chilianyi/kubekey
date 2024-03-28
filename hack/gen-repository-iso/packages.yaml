@@ -91,3 +91,10 @@ aicp:
   - nvidia-driver-550-open
   - cuda-drivers-550
   - nvidia-container-toolkit
+  - zfsutils-linux
+  - dpkg-dev
+  - make
+  - libdpkg-perl
+  - bzip2
+  - lto-disabled-list
+  - libalgorithm-merge-perl
