@@ -102,5 +102,5 @@ const (
 	AicpDockerRootDir = "/aicp/dockerRootDir"
 	AicpZpoolName = "zfspv-pool"
 	AicpDefaultDockerOverlaySize = "50G"
-	AicpSupportedSystemVersions = "22.04,"
+	AicpSupportedSystemVersions = "22.04,20.04"
 )
