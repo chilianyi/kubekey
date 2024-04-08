@@ -75,7 +75,11 @@ database:
   max_open_conns: 900
 
 # The default data volume
+{{- if .AicpCluster }}
+data_volume: /aicp/dockerRootDir/registry
+{{- else }}
 data_volume: /mnt/registry
+{{- end }}
 
 # Trivy configuration
 #
@@ -146,4 +150,8 @@ func Password(kubeConf *common.KubeConf, domain string) string {
 	}
 
 	return "Harbor12345"
+}
+
+func IsAicpCluster(kubeConf *common.KubeConf) bool {
+	return kubeConf.Arg.IsAicpCluster
 }
