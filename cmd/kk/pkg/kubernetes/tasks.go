@@ -1090,6 +1090,13 @@ func (c *ConfigureKubernetes) Execute(runtime connector.Runtime) error {
 				return err
 			}
 		}
+		if kubeHost.IsRole(common.Worker){
+			taintCmd := fmt.Sprintf("kubectl taint nodes %s aicp.group/worker:NoSchedule", hosts[j].GetName())
+			_, err := runtime.GetRunner().SudoCmd(taintCmd, true)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
