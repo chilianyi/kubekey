@@ -49,6 +49,9 @@ var DockerConfig = template.Must(template.New("daemon.json").Parse(
   {{- if .AicpCluster }}
   "storage-driver": "overlay2",
   "storage-opts": [ "overlay2.size={{ .DockerRootOverlaySize }}" ],
+  "live-restore": true,
+  "max-concurrent-downloads": 25,
+  "max-concurrent-uploads": 25,
   {{- end}}
   {{- if and .AicpCluster (eq .GpuNodeType "nvidia") }}
   "default-runtime": "nvidia",
