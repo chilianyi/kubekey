@@ -27,10 +27,21 @@ RUN if [ "${TARGETARCH}" = "amd64" ]; then \
     && echo "deb [signed-by=/usr/share/keyrings/cuda-archive-keyring.gpg] https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/${ARCH}/ /" | tee /etc/apt/sources.list.d/cuda-${DISTRO}-${ARCH}.list \
     && wget https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/${ARCH}/cuda-${DISTRO}.pin \
     && mv cuda-${DISTRO}.pin /etc/apt/preferences.d/cuda-repository-pin-600 \
-    && apt-get update
+    && apt-get update -qq
+
+# install NVIDIA favricmanager
+RUN if [ "${TARGETARCH}" = "amd64" ]; then \
+        ARCH=x86_64; \
+    else \
+        ARCH=${TARGETARCH}; \
+    fi \
+    && wget https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/${ARCH}/cuda-keyring_1.1-1_all.deb \
+    && dpkg -i cuda-keyring_1.1-1_all.deb \
+    && apt-get update -qq
 
 WORKDIR /package
 COPY packages.yaml .
+RUN apt update -qq
 
 COPY --from=mikefarah/yq:4.11.1 /usr/bin/yq /usr/bin/yq
 RUN yq eval "${PKGS}" packages.yaml >> packages.list \
