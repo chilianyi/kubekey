@@ -98,3 +98,31 @@ aicp:
   - bzip2
   - lto-disabled-list
   - libalgorithm-merge-perl
+  - libnl-route-3-dev
+  - m4
+  - libgfortran5
+  - dpatch
+  - pkg-config
+  - graphviz
+  - quilt
+  - dkms
+  - automake
+  - libfuse2
+  - debhelper
+  - swig
+  - bison
+  - flex
+  - libc6-dev
+  - make
+  - autoconf
+  - autotools-dev
+  - chrpath
+  - gfortran
+  - tk
+  - libltdl-dev
+  - gcc
+  - libopenmpi-dev
+  - pigz
+  - libnccl2=2.21.5-1+cuda12.4
+  - libnccl-dev=2.21.5-1+cuda12.4
+  - nvidia-fabricmanager-550
