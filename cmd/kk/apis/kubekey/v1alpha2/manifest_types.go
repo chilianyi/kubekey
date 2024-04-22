@@ -27,7 +27,8 @@ type Iso struct {
 }
 
 type Repository struct {
-	Iso Iso `yaml:"iso" json:"iso"`
+	Iso 	Iso 	`yaml:"iso" json:"iso"`
+	Files 	[]Iso 	`yaml:"files" json:"files"`
 }
 
 type OperatingSystem struct {
