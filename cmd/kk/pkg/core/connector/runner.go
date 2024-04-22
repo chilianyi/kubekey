@@ -128,6 +128,33 @@ func (r *Runner) SudoScp(local, remote string) error {
 	return nil
 }
 
+func (r *Runner) SudoScpWithoutDelete(local, remote string) error {
+	if r.Conn == nil {
+		return errors.New("no ssh connection available")
+	}
+
+	// scp to tmp dir
+	remoteTmp := filepath.Join(common.TmpDir, remote)
+	//remoteTmp := remote
+	if err := r.Scp(local, remoteTmp); err != nil {
+		return err
+	}
+
+	baseRemotePath := remote
+	if !util.IsDir(local) {
+		baseRemotePath = filepath.Dir(remote)
+	}
+	if err := r.Conn.MkDirAll(baseRemotePath, "", r.Host); err != nil {
+		return err
+	}
+
+	if _, err := r.SudoCmd(fmt.Sprintf(common.MoveCmd, remoteTmp, remote), false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *Runner) FileExist(remote string) (bool, error) {
 	if r.Conn == nil {
 		return false, errors.New("no ssh connection available")

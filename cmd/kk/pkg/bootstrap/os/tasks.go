@@ -18,8 +18,11 @@ package os
 
 import (
 	"fmt"
+	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/core/util"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -447,6 +450,100 @@ func (i *InstallPackage) Execute(runtime connector.Runtime) error {
 	return nil
 }
 
+type PreInstallPackage struct {
+	common.KubeAction
+}
+
+func (i *PreInstallPackage) Execute(runtime connector.Runtime) error {
+	host := runtime.RemoteHost()
+	repo, ok := host.GetCache().Get("repo")
+	if !ok {
+		return errors.New("get repo failed by host cache")
+	}
+	r := repo.(repository.Interface)
+
+	var pkg []string
+	if _, ok := r.(*repository.Debian); ok {
+		pkg = i.KubeConf.Cluster.System.PreDebs
+	} else if _, ok := r.(*repository.RedhatPackageManager); ok {
+		pkg = i.KubeConf.Cluster.System.PreRpms
+	}
+
+	if installErr := r.Update(runtime); installErr != nil {
+		return errors.Wrap(errors.WithStack(installErr), "update repository failed")
+	}
+
+	if installErr := r.Install(runtime, pkg...); installErr != nil {
+		return errors.Wrap(errors.WithStack(installErr), "install repository package failed")
+	}
+	return nil
+}
+
+type PostInstallPackage struct {
+	common.KubeAction
+}
+
+func (i *PostInstallPackage) Execute(runtime connector.Runtime) error {
+	host := runtime.RemoteHost()
+	repo, ok := host.GetCache().Get("repo")
+	if !ok {
+		return errors.New("get repo failed by host cache")
+	}
+	r := repo.(repository.Interface)
+
+	var pkg []string
+	if _, ok := r.(*repository.Debian); ok {
+		pkg = i.KubeConf.Cluster.System.PostDebs
+	} else if _, ok := r.(*repository.RedhatPackageManager); ok {
+		pkg = i.KubeConf.Cluster.System.PostRpms
+	}
+
+	if installErr := r.Update(runtime); installErr != nil {
+		return errors.Wrap(errors.WithStack(installErr), "update repository failed")
+	}
+
+	if installErr := r.Install(runtime, pkg...); installErr != nil {
+		return errors.Wrap(errors.WithStack(installErr), "install repository package failed")
+	}
+	return nil
+}
+
+type CustomAfterPreInstall struct {
+	common.KubeAction
+}
+
+func (i *CustomAfterPreInstall) Execute(runtime connector.Runtime) error {
+	for idx, scriptsItem := range i.KubeConf.Cluster.System.AfterPrePkgs {
+		taskDir := fmt.Sprintf("%s-%d-script", "CustomAfterPreInstall", idx)
+		if len(scriptsItem.Bash) <= 0 {
+			return errors.Errorf("custom script %s Bash is empty", scriptsItem.Name)
+		}
+		err := RunCustomScripts(runtime, scriptsItem, taskDir)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type CustomAfterPostInstall struct {
+	common.KubeAction
+}
+
+func (i *CustomAfterPostInstall) Execute(runtime connector.Runtime) error {
+	for idx, scriptsItem := range i.KubeConf.Cluster.System.AfterPostPkgs {
+		taskDir := fmt.Sprintf("%s-%d-script", "CustomAfterPreInstall", idx)
+		if len(scriptsItem.Bash) <= 0 {
+			return errors.Errorf("custom script %s Bash is empty", scriptsItem.Name)
+		}
+		err := RunCustomScripts(runtime, scriptsItem, taskDir)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type ResetRepository struct {
 	common.KubeAction
 }
@@ -731,4 +828,78 @@ func getDeviceUUID(runtime connector.Runtime, device string) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(uuid), nil
+}
+
+
+// Run custom scripts
+func RunCustomScripts(runtime connector.Runtime, scripts kubekeyv1alpha2.CustomScripts, taskDir string) error {
+	remoteTaskHome := common.TmpDir + taskDir
+
+	if _, err := runtime.GetRunner().SudoCmd(fmt.Sprintf("mkdir -p %s", remoteTaskHome), false); err != nil {
+		return errors.Wrapf(err, "create remoteTaskHome: %s  err:%s", remoteTaskHome, err)
+	}
+
+	// dilver the dependency materials to the remotehost
+	for idx, localPath := range scripts.Materials {
+
+		if !util.IsExist(localPath) {
+			return errors.Errorf("Not found Path: %s", localPath)
+		}
+
+		targetPath := filepath.Join(remoteTaskHome, filepath.Base(localPath))
+
+		// first clean the target to makesure target path always is the lastest.
+		cleanCmd := fmt.Sprintf("rm -fr %s", targetPath)
+		if _, err := runtime.GetRunner().SudoCmd(cleanCmd, false); err != nil {
+			return errors.Wrapf(err, "Can not remove target found Path: %s", targetPath)
+		}
+
+		start := time.Now()
+		err := runtime.GetRunner().SudoScp(localPath, targetPath)
+		if err != nil {
+			return errors.Wrapf(err, "Can not Scp -fr %s root@%s:%s", localPath, runtime.RemoteHost().GetAddress(), targetPath)
+		}
+
+		fmt.Printf("Copy %d/%d materials: Scp -fr %s root@%s:%s done, take %s\n",
+			idx, len(scripts.Materials), localPath, runtime.RemoteHost().GetAddress(), targetPath, time.Since(start))
+	}
+
+	// wrap use bash file if shell has many lines.
+	RunBash := scripts.Bash
+	if strings.Index(RunBash, "\n") > 0 {
+		tmpFile, err := os.CreateTemp(os.TempDir(), taskDir)
+		if err != nil {
+			return errors.Wrapf(err, "create tmp Bash: %s/%s in local node, err:%s", os.TempDir(), taskDir, err)
+		}
+		defer os.Remove(tmpFile.Name())
+
+		if _, err := tmpFile.WriteString(RunBash); err != nil {
+			return errors.Wrapf(err, "write to tmp:%s in local node, err:%s", tmpFile.Name(), err)
+		}
+
+		targetPath := filepath.Join(remoteTaskHome, "task.sh")
+		if err := runtime.GetRunner().SudoScpWithoutDelete(tmpFile.Name(), targetPath); err != nil {
+			return errors.Wrapf(err, "Can not Scp -fr %s root@%s:%s", tmpFile.Name(), runtime.RemoteHost().GetAddress(), targetPath)
+		}
+
+		RunBash = "/bin/bash " + targetPath
+	}
+
+	start := time.Now()
+	out, err := runtime.GetRunner().SudoCmd(RunBash, false)
+	if err != nil {
+		return errors.Errorf("Exec Bash: %s err:%s", RunBash, err)
+	}
+
+	if !runtime.GetRunner().Debug {
+		fmt.Printf("Exec Bash:%s done, take %s", RunBash, time.Since(start))
+		cleanCmd := fmt.Sprintf("rm -fr %s", remoteTaskHome)
+		if _, err := runtime.GetRunner().SudoCmd(cleanCmd, false); err != nil {
+			return errors.Wrapf(err, "Exec cmd:%s err:%s", cleanCmd, err)
+		}
+	} else {
+		// keep the Materials for debug
+		fmt.Printf("Exec Bash:%s done, take %s, output:\n%s", RunBash, time.Since(start), out)
+	}
+	return nil
 }

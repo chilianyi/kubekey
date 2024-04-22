@@ -42,9 +42,23 @@ func (r *RepositoryModule) Init() {
 		Action: new(LocalCopy),
 	}
 
+	downloadFiles := &task.LocalTask{
+		Name:    "DownloadFiles",
+		Desc:    "Download file into work dir",
+		Action:  new(DownloadFiles),
+	}
+
+	localCopyFiles := &task.LocalTask{
+		Name:   "LocalCopyFiles",
+		Desc:   "Copy local file into artifact dir",
+		Action: new(LocalCopyFiles),
+	}
+
 	r.Tasks = []task.Interface{
 		download,
 		localCopy,
+		downloadFiles,
+		localCopyFiles,
 	}
 }
 

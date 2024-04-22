@@ -226,6 +226,25 @@ func (r *RepositoryOnlineModule) Init() {
 		Retry:    1,
 	}
 
+	preInstall := &task.RemoteTask{
+		Name:     "InstallPackage",
+		Desc:     "Install packages",
+		Hosts:    r.Runtime.GetAllHosts(),
+		Action:   new(PreInstallPackage),
+		Parallel: true,
+		Retry:    1,
+		Rollback: new(RecoverRepository),
+	}
+
+	customAfterPreInstallScriptTask := &task.RemoteTask{
+		Name:     "CustomAfterPreInstallScriptTask",
+		Desc:     "Custom After PreInstall Script Task",
+		Hosts:    r.Runtime.GetAllHosts(),
+		Action:   new(CustomAfterPreInstall),
+		Parallel: true,
+		Retry:    1,
+	}
+
 	install := &task.RemoteTask{
 		Name:     "InstallPackage",
 		Desc:     "Install packages",
@@ -235,10 +254,34 @@ func (r *RepositoryOnlineModule) Init() {
 		Retry:    1,
 	}
 
+	postInstall := &task.RemoteTask{
+		Name:     "InstallPackage",
+		Desc:     "Install packages",
+		Hosts:    r.Runtime.GetAllHosts(),
+		Action:   new(PostInstallPackage),
+		Parallel: true,
+		Retry:    1,
+		Rollback: new(RecoverRepository),
+	}
+
+	customAfterPostInstallScriptTask := &task.RemoteTask{
+		Name:     "CustomAfterPostInstallScriptTask",
+		Desc:     "Custom After PostInstall Script Task",
+		Hosts:    r.Runtime.GetAllHosts(),
+		Action:    new(CustomAfterPostInstall),
+		Parallel: true,
+		Retry:    1,
+	}
+
+
 	r.Tasks = []task.Interface{
 		getOSData,
 		newRepo,
+		preInstall,
+		customAfterPreInstallScriptTask,
 		install,
+		postInstall,
+		customAfterPostInstallScriptTask,
 	}
 }
 
@@ -311,6 +354,24 @@ func (r *RepositoryModule) Init() {
 		Rollback: new(RecoverRepository),
 	}
 
+	preInstall := &task.RemoteTask{
+		Name:     "InstallPackage",
+		Desc:     "Install packages",
+		Hosts:    r.Runtime.GetAllHosts(),
+		Action:   new(PreInstallPackage),
+		Parallel: true,
+		Retry:    1,
+	}
+
+	customAfterPreInstallScriptTask := &task.RemoteTask{
+		Name:     "CustomAfterPreInstallScriptTask",
+		Desc:     "Custom After PreInstall Script Task",
+		Hosts:    r.Runtime.GetAllHosts(),
+		Action:   new(CustomAfterPreInstall),
+		Parallel: true,
+		Retry:    1,
+	}
+
 	install := &task.RemoteTask{
 		Name:     "InstallPackage",
 		Desc:     "Install packages",
@@ -318,7 +379,24 @@ func (r *RepositoryModule) Init() {
 		Action:   new(InstallPackage),
 		Parallel: true,
 		Retry:    1,
-		Rollback: new(RecoverRepository),
+	}
+
+	postInstall := &task.RemoteTask{
+		Name:     "InstallPackage",
+		Desc:     "Install packages",
+		Hosts:    r.Runtime.GetAllHosts(),
+		Action:   new(PostInstallPackage),
+		Parallel: true,
+		Retry:    1,
+	}
+
+	customAfterPostInstallScriptTask := &task.RemoteTask{
+		Name:     "CustomAfterPostInstallScriptTask",
+		Desc:     "Custom After PostInstall Script Task",
+		Hosts:    r.Runtime.GetAllHosts(),
+		Action:    new(CustomAfterPostInstall),
+		Parallel: true,
+		Retry:    1,
 	}
 
 	reset := &task.RemoteTask{
@@ -345,7 +423,11 @@ func (r *RepositoryModule) Init() {
 		newRepo,
 		backup,
 		add,
+		preInstall,
+		customAfterPreInstallScriptTask,
 		install,
+		postInstall,
+		customAfterPostInstallScriptTask,
 		reset,
 		umount,
 	}

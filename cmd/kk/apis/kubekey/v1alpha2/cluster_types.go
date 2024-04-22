@@ -100,8 +100,14 @@ type CustomScripts struct {
 type System struct {
 	NtpServers      []string        `yaml:"ntpServers" json:"ntpServers,omitempty"`
 	Timezone        string          `yaml:"timezone" json:"timezone,omitempty"`
-	Rpms            []string        `yaml:"rpms" json:"rpms,omitempty"`
-	Debs            []string        `yaml:"debs" json:"debs,omitempty"`
+	PreRpms         []string        `yaml:"preRpms" json:"preRpms,omitempty"`
+	PreDebs         []string        `yaml:"preDebs" json:"preDebs,omitempty"`
+	Rpms         	[]string        `yaml:"rpms" json:"rpms,omitempty"`
+	Debs         	[]string        `yaml:"debs" json:"debs,omitempty"`
+	PostRpms        []string        `yaml:"postRpms" json:"postRpms,omitempty"`
+	PostDebs        []string        `yaml:"postDebs" json:"postDebs,omitempty"`
+	AfterPrePkgs    []CustomScripts `yaml:"afterPrePkgs" json:"afterPrePkgs,omitempty"`
+	AfterPostPkgs   []CustomScripts `yaml:"afterPostPkgs" json:"afterPostPkgs,omitempty"`
 	PreInstall      []CustomScripts `yaml:"preInstall" json:"preInstall,omitempty"`
 	PostInstall     []CustomScripts `yaml:"postInstall" json:"postInstall,omitempty"`
 	SkipConfigureOS bool            `yaml:"skipConfigureOS" json:"skipConfigureOS,omitempty"`

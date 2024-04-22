@@ -18,6 +18,7 @@ package artifact
 
 import (
 	"fmt"
+	kubekeyv1alpha2 "github.com/kubesphere/kubekey/v3/cmd/kk/apis/kubekey/v1alpha2"
 	"io"
 	"os"
 	"os/exec"
@@ -93,6 +94,78 @@ func (l *LocalCopy) Execute(runtime connector.Runtime) error {
 		path := filepath.Join(dir, fmt.Sprintf("%s-%s-%s.iso", sys.Id, sys.Version, sys.Arch))
 		if out, err := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo cp -f %s %s", sys.Repository.Iso.LocalPath, path)).CombinedOutput(); err != nil {
 			return errors.Errorf("copy %s to %s failed: %s", sys.Repository.Iso.LocalPath, path, string(out))
+		}
+	}
+
+	return nil
+}
+
+type DownloadFiles struct {
+	common.ArtifactAction
+}
+
+func (d *DownloadFiles) Execute(runtime connector.Runtime) error {
+	for i, sys := range d.Manifest.Spec.OperatingSystems {
+		for _, fileItem := range sys.Repository.Files {
+			if fileItem.Url == "" {
+				continue
+			}
+
+			fileName := filepath.Base(fileItem.Url)
+			filePath := filepath.Join(runtime.GetWorkDir(), fileName)
+			getCmd := d.Manifest.Arg.DownloadCommand(filePath, fileItem.Url)
+
+			cmd := exec.Command("/bin/sh", "-c", getCmd)
+			stdout, err := cmd.StdoutPipe()
+			if err != nil {
+				return fmt.Errorf("Failed to download %s file: %s error: %w ", fileName, getCmd, err)
+			}
+			cmd.Stderr = cmd.Stdout
+
+			if err = cmd.Start(); err != nil {
+				return fmt.Errorf("Failed to download %s file: %s error: %w ", fileName, getCmd, err)
+			}
+			for {
+				tmp := make([]byte, 1024)
+				_, err := stdout.Read(tmp)
+				fmt.Print(string(tmp))
+				if errors.Is(err, io.EOF) {
+					break
+				} else if err != nil {
+					logger.Log.Errorln(err)
+					break
+				}
+			}
+			if err = cmd.Wait(); err != nil {
+				return fmt.Errorf("Failed to download %s file: %s error: %w ", fileName, getCmd, err)
+			}
+			d.Manifest.Spec.OperatingSystems[i].Repository.Files = append(d.Manifest.Spec.OperatingSystems[i].Repository.Files, kubekeyv1alpha2.Iso{LocalPath: filePath})
+		}
+	}
+	return nil
+}
+
+type LocalCopyFiles struct {
+	common.ArtifactAction
+}
+
+func (l *LocalCopyFiles) Execute(runtime connector.Runtime) error {
+	for _, sys := range l.Manifest.Spec.OperatingSystems {
+		for _, fileItem := range sys.Repository.Files {
+			if fileItem.LocalPath == "" {
+				continue
+			}
+
+			dir := filepath.Join(runtime.GetWorkDir(), common.Artifact, "repository", sys.Arch, sys.Id, sys.Version)
+			if err := coreutil.Mkdir(dir); err != nil {
+				return errors.Wrapf(errors.WithStack(err), "mkdir %s failed", dir)
+			}
+
+			fileName := filepath.Base(fileItem.Url)
+			path := filepath.Join(dir, fileName)
+			if out, err := exec.Command("/bin/sh", "-c", fmt.Sprintf("sudo cp -f %s %s", fileItem.LocalPath, path)).CombinedOutput(); err != nil {
+				return errors.Errorf("copy %s to %s failed: %s", fileItem.LocalPath, path, string(out))
+			}
 		}
 	}
 
