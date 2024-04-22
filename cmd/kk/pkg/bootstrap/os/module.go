@@ -361,6 +361,7 @@ func (r *RepositoryModule) Init() {
 		Action:   new(PreInstallPackage),
 		Parallel: true,
 		Retry:    1,
+		Rollback: new(RecoverRepository),
 	}
 
 	customAfterPreInstallScriptTask := &task.RemoteTask{
@@ -370,6 +371,7 @@ func (r *RepositoryModule) Init() {
 		Action:   new(CustomAfterPreInstall),
 		Parallel: true,
 		Retry:    1,
+		Rollback: new(RecoverRepository),
 	}
 
 	install := &task.RemoteTask{
@@ -379,6 +381,7 @@ func (r *RepositoryModule) Init() {
 		Action:   new(InstallPackage),
 		Parallel: true,
 		Retry:    1,
+		Rollback: new(RecoverRepository),
 	}
 
 	postInstall := &task.RemoteTask{
@@ -388,6 +391,7 @@ func (r *RepositoryModule) Init() {
 		Action:   new(PostInstallPackage),
 		Parallel: true,
 		Retry:    1,
+		Rollback: new(RecoverRepository),
 	}
 
 	customAfterPostInstallScriptTask := &task.RemoteTask{
@@ -397,6 +401,7 @@ func (r *RepositoryModule) Init() {
 		Action:    new(CustomAfterPostInstall),
 		Parallel: true,
 		Retry:    1,
+		Rollback: new(RecoverRepository),
 	}
 
 	reset := &task.RemoteTask{
