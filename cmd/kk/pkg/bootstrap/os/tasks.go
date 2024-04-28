@@ -314,15 +314,27 @@ func (s *SyncRepositoryFile) Execute(runtime connector.Runtime) error {
 		return errors.New("get os release failed by root cache")
 	}
 	r := release.(*osrelease.Data)
-
-	fileName := fmt.Sprintf("%s-%s-%s.iso", r.ID, r.VersionID, host.GetArch())
-	src := filepath.Join(runtime.GetWorkDir(), "repository", host.GetArch(), r.ID, r.VersionID, fileName)
-	dst := filepath.Join(common.TmpDir, fileName)
-	if err := runtime.GetRunner().Scp(src, dst); err != nil {
-		return errors.Wrapf(errors.WithStack(err), "scp %s to %s failed", src, dst)
+	isoFileName := fmt.Sprintf("%s-%s-%s.iso", r.ID, r.VersionID, host.GetArch())
+	srcDir := filepath.Join(runtime.GetWorkDir(), "repository", host.GetArch(), r.ID, r.VersionID)
+	files, err := os.ReadDir(srcDir)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Error reading directory: %s", err.Error()))
 	}
-
-	host.GetCache().Set("iso", fileName)
+	for _, srcFile := range files {
+		if srcFile.IsDir() {
+			continue
+		}
+		dst := filepath.Join(common.TmpDir, srcFile.Name())
+		src := filepath.Join(srcDir, srcFile.Name())
+		if err := runtime.GetRunner().Scp(src, dst); err != nil {
+			return errors.Wrapf(errors.WithStack(err), "scp %s to %s failed", src, dst)
+		}
+		if strings.Compare(isoFileName, srcFile.Name()) == 0 {
+			host.GetCache().Set("iso", srcFile.Name())
+		} else {
+			host.GetCache().Set(fmt.Sprintf("file-%s", srcFile.Name()), srcFile.Name())
+		}
+	}
 	return nil
 }
 

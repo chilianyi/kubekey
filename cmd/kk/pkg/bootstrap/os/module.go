@@ -209,6 +209,15 @@ func (r *RepositoryOnlineModule) IsSkip() bool {
 func (r *RepositoryOnlineModule) Init() {
 	r.Name = "RepositoryOnlineModule"
 
+	sync := &task.RemoteTask{
+		Name:     "SyncRepositoryISOFile",
+		Desc:     "Sync repository iso file to all nodes",
+		Hosts:    r.Runtime.GetAllHosts(),
+		Action:   new(SyncRepositoryFile),
+		Parallel: true,
+		Retry:    2,
+	}
+
 	getOSData := &task.RemoteTask{
 		Name:     "GetOSData",
 		Desc:     "Get OS release",
@@ -275,6 +284,7 @@ func (r *RepositoryOnlineModule) Init() {
 
 
 	r.Tasks = []task.Interface{
+		sync,
 		getOSData,
 		newRepo,
 		preInstall,
