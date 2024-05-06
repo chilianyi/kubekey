@@ -471,6 +471,8 @@ func MigrateSelfNodeCriTasks(runtime connector.Runtime, kubeAction common.KubeAc
 					"SandBoxImage":       images.GetImage(runtime, kubeAction.KubeConf, "pause").ImageName(),
 					"Auths":              registry.DockerRegistryAuthEntries(kubeAction.KubeConf.Cluster.Registry.Auths),
 					"DataRoot":           templates.DataRoot(kubeAction.KubeConf),
+					"AicpCluster":        templates.IsAicpCluster(kubeAction.KubeConf),
+					"GpuNodeType":        templates.GpuNodeType(kubeAction.KubeConf, runtime),
 				},
 			},
 			Parallel: false,
