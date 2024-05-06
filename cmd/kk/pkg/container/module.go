@@ -29,7 +29,6 @@ import (
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/core/util"
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/images"
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/kubernetes"
-	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/registry"
 )
 
 type InstallContainerModule struct {
@@ -200,17 +199,7 @@ func InstallContainerd(m *InstallContainerModule) []task.Interface {
 			&kubernetes.NodeInCluster{Not: true},
 			&ContainerdExist{Not: true},
 		},
-		Action: &action.Template{
-			Template: templates.ContainerdConfig,
-			Dst:      filepath.Join("/etc/containerd/", templates.ContainerdConfig.Name()),
-			Data: util.Data{
-				"Mirrors":            templates.Mirrors(m.KubeConf),
-				"InsecureRegistries": m.KubeConf.Cluster.Registry.InsecureRegistries,
-				"SandBoxImage":       images.GetImage(m.Runtime, m.KubeConf, "pause").ImageName(),
-				"Auths":              registry.DockerRegistryAuthEntries(m.KubeConf.Cluster.Registry.Auths),
-				"DataRoot":           templates.DataRoot(m.KubeConf),
-			},
-		},
+		Action:   new(GenerateContainerdConfig),
 		Parallel: true,
 	}
 
