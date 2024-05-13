@@ -268,7 +268,6 @@ func InstallHarbor(i *InstallRegistryModule) []task.Interface {
 			Dst:      "/etc/systemd/system/harbor.service",
 			Data: util.Data{
 				"Harbor_install_path": "/opt/harbor",
-				"AicpCluster":         templates.IsAicpCluster(i.KubeConf),
 			},
 		},
 		Parallel: true,

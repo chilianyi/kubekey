@@ -236,6 +236,7 @@ func (g *GenerateHarborConfig) Execute(runtime connector.Runtime) error {
 			"Certificate": fmt.Sprintf("%s.pem", g.KubeConf.Cluster.Registry.GetHost()),
 			"Key":         fmt.Sprintf("%s-key.pem", g.KubeConf.Cluster.Registry.GetHost()),
 			"Password":    templates.Password(g.KubeConf, g.KubeConf.Cluster.Registry.GetHost()),
+			"AicpCluster": templates.IsAicpCluster(g.KubeConf),
 		},
 	}
 	templateAction.Init(nil, nil)
