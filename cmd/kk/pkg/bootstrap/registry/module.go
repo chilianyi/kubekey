@@ -170,6 +170,17 @@ func InstallHarbor(i *InstallRegistryModule) []task.Interface {
 		Retry:    2,
 	}
 
+	generateContainerdConfig := &task.RemoteTask{
+		Name:  "GenerateContainerdConfig",
+		Desc:  "Generate containerd config",
+		Hosts: i.Runtime.GetHostsByRole(common.Registry),
+		Prepare: &prepare.PrepareCollection{
+			&container.ContainerdExist{Not: true},
+		},
+		Action:   new(container.GenerateContainerdConfig),
+		Parallel: true,
+	}
+
 	generateContainerdService := &task.RemoteTask{
 		Name:  "GenerateContainerdService",
 		Desc:  "Generate containerd service",
@@ -294,6 +305,7 @@ func InstallHarbor(i *InstallRegistryModule) []task.Interface {
 
 	return []task.Interface{
 		syncBinaries,
+		generateContainerdConfig,
 		generateContainerdService,
 		generateDockerService,
 		generateDockerConfig,
