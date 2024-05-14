@@ -305,7 +305,15 @@ type SyncRepositoryFile struct {
 
 func (s *SyncRepositoryFile) Execute(runtime connector.Runtime) error {
 	if err := utils.ResetTmpDir(runtime); err != nil {
-		return errors.Wrap(err, "reset tmp dir failed")
+		// umount
+		mountPath := filepath.Join(common.TmpDir, "iso")
+		umountCmd := fmt.Sprintf("umount %s", mountPath)
+		runtime.GetRunner().SudoCmd(umountCmd, false)
+
+		// retry
+		if err = utils.ResetTmpDir(runtime); err != nil {
+			return errors.Wrap(err, "reset tmp dir failed")
+		}
 	}
 
 	host := runtime.RemoteHost()
