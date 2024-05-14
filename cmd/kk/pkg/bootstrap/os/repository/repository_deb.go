@@ -36,6 +36,10 @@ func (d *Debian) Backup(runtime connector.Runtime) error {
 		return err
 	}
 
+	if _, err := runtime.GetRunner().SudoCmd("rm -rf /etc/apt/sources.list.d.kubekey.bak", false); err != nil {
+		return err
+	}
+
 	if _, err := runtime.GetRunner().SudoCmd("if [ -d /etc/apt/sources.list.d ]; then mv /etc/apt/sources.list.d /etc/apt/sources.list.d.kubekey.bak; fi", false); err != nil {
 		return err
 	}
@@ -94,6 +98,8 @@ func (d *Debian) Install(runtime connector.Runtime, pkg ...string) error {
 				repairCmd := "dpkg --configure -a"
 				runtime.GetRunner().SudoCmd(repairCmd, true)
 				time.Sleep(5 * time.Second)
+				fixCmd := "apt --fix-broken install"
+				runtime.GetRunner().SudoCmd(fixCmd, true)
 				continue
 			}
 			// If we have reached the max retries, return the last error
@@ -110,11 +116,11 @@ func (d *Debian) Reset(runtime connector.Runtime) error {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("mv /etc/apt/sources.list.kubekey.bak /etc/apt/sources.list", false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("if [ -f /etc/apt/sources.list.kubekey.bak ]; then mv /etc/apt/sources.list.kubekey.bak /etc/apt/sources.list; fi", false); err != nil {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("mv /etc/apt/sources.list.d.kubekey.bak /etc/apt/sources.list.d", false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("if [ -d /etc/apt/sources.list.d.kubekey.bak ]; then mv /etc/apt/sources.list.d.kubekey.bak /etc/apt/sources.list.d; fi", false); err != nil {
 		return err
 	}
 
