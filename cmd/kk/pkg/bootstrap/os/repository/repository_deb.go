@@ -93,12 +93,12 @@ func (d *Debian) Install(runtime connector.Runtime, pkg ...string) error {
 		if _, err := runtime.GetRunner().SudoCmd(installCmd, true); err != nil {
 			// If an error occurs and we have not reached the max retries, wait and retry
 			if attempts < maxRetries {
-				killCmd := "ps aux | grep \"apt install\" | grep -v grep | awk '{print $2}' | xargs -r kill -9"
+				killCmd := "ps aux | grep apt | grep install | grep -v grep | awk '{print $2}' | xargs -r kill -9"
 				runtime.GetRunner().SudoCmd(killCmd, true)
 				repairCmd := "dpkg --configure -a"
 				runtime.GetRunner().SudoCmd(repairCmd, true)
 				time.Sleep(5 * time.Second)
-				fixCmd := "apt --fix-broken install"
+				fixCmd := "echo y | apt --fix-broken install"
 				runtime.GetRunner().SudoCmd(fixCmd, true)
 				continue
 			}
