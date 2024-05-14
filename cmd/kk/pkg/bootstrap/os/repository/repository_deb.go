@@ -32,11 +32,11 @@ func NewDeb() Interface {
 }
 
 func (d *Debian) Backup(runtime connector.Runtime) error {
-	if _, err := runtime.GetRunner().SudoCmd("mv /etc/apt/sources.list /etc/apt/sources.list.kubekey.bak", false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("if [ -f /etc/apt/sources.list ]; then mv /etc/apt/sources.list /etc/apt/sources.list.kubekey.bak; fi", false); err != nil {
 		return err
 	}
 
-	if _, err := runtime.GetRunner().SudoCmd("mv /etc/apt/sources.list.d /etc/apt/sources.list.d.kubekey.bak", false); err != nil {
+	if _, err := runtime.GetRunner().SudoCmd("if [ -d /etc/apt/sources.list.d ]; then mv /etc/apt/sources.list.d /etc/apt/sources.list.d.kubekey.bak; fi", false); err != nil {
 		return err
 	}
 
