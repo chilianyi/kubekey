@@ -43,11 +43,12 @@ import (
 
 func NewAddNodesPipeline(runtime *common.KubeRuntime) error {
 	noArtifact := runtime.Arg.Artifact == ""
+	skipSystemCheck := runtime.Arg.IsSkipSystemCheck
 
 	m := []module.Module{
 		&precheck.GreetingsModule{},
 		&customscripts.CustomScriptsModule{Phase: "PreInstall", Scripts: runtime.Cluster.System.PreInstall},
-		&precheck.NodeSystemPreCheckModule{},
+		&precheck.NodeSystemPreCheckModule{Skip: skipSystemCheck},
 		&precheck.NodePreCheckModule{},
 		&confirm.InstallConfirmModule{},
 		&artifact.UnArchiveModule{Skip: noArtifact},

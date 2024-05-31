@@ -26,11 +26,12 @@ import (
 )
 
 type InitRegistryOptions struct {
-	CommonOptions  *options.CommonOptions
-	ClusterCfgFile string
-	DownloadCmd    string
-	Artifact       string
-	IsAicpCluster  bool
+	CommonOptions     *options.CommonOptions
+	ClusterCfgFile    string
+	DownloadCmd       string
+	Artifact          string
+	IsAicpCluster     bool
+	IsSkipSystemCheck bool
 }
 
 func NewInitRegistryOptions() *InitRegistryOptions {
@@ -62,10 +63,11 @@ func (o *InitRegistryOptions) Complete(_ *cobra.Command, _ []string) error {
 
 func (o *InitRegistryOptions) Run() error {
 	arg := common.Argument{
-		FilePath:      o.ClusterCfgFile,
-		Debug:         o.CommonOptions.Verbose,
-		Artifact:      o.Artifact,
-		IsAicpCluster: o.IsAicpCluster,
+		FilePath:          o.ClusterCfgFile,
+		Debug:             o.CommonOptions.Verbose,
+		Artifact:          o.Artifact,
+		IsAicpCluster:     o.IsAicpCluster,
+		IsSkipSystemCheck: o.IsSkipSystemCheck,
 	}
 	return pipelines.InitRegistry(arg, o.DownloadCmd)
 }
@@ -76,4 +78,5 @@ func (o *InitRegistryOptions) AddFlags(cmd *cobra.Command) {
 		`The user defined command to download the necessary files. The first param '%s' is output path, the second param '%s', is the URL`)
 	cmd.Flags().StringVarP(&o.Artifact, "artifact", "a", "", "Path to a KubeKey artifact")
 	cmd.Flags().BoolVarP(&o.IsAicpCluster, "is-aicp-cluster", "", false, "Init a aicp cluster os")
+	cmd.Flags().BoolVarP(&o.IsSkipSystemCheck, "is-skip-system-check", "", false, "Skip system check")
 }

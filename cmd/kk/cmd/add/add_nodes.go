@@ -26,14 +26,15 @@ import (
 )
 
 type AddNodesOptions struct {
-	CommonOptions    *options.CommonOptions
-	ClusterCfgFile   string
-	SkipPullImages   bool
-	ContainerManager string
-	DownloadCmd      string
-	Artifact         string
-	InstallPackages  bool
-	IsAicpCluster    bool
+	CommonOptions     *options.CommonOptions
+	ClusterCfgFile    string
+	SkipPullImages    bool
+	ContainerManager  string
+	DownloadCmd       string
+	Artifact          string
+	InstallPackages   bool
+	IsAicpCluster     bool
+	IsSkipSystemCheck bool
 }
 
 func NewAddNodesOptions() *AddNodesOptions {
@@ -68,17 +69,18 @@ func (o *AddNodesOptions) Complete(_ *cobra.Command, _ []string) error {
 
 func (o *AddNodesOptions) Run() error {
 	arg := common.Argument{
-		FilePath:         o.ClusterCfgFile,
-		KsEnable:         false,
-		Debug:            o.CommonOptions.Verbose,
-		IgnoreErr:        o.CommonOptions.IgnoreErr,
-		SkipConfirmCheck: o.CommonOptions.SkipConfirmCheck,
-		SkipPullImages:   o.SkipPullImages,
-		ContainerManager: o.ContainerManager,
-		Artifact:         o.Artifact,
-		InstallPackages:  o.InstallPackages,
-		IsAicpCluster:    o.IsAicpCluster,
-		Namespace:        o.CommonOptions.Namespace,
+		FilePath:          o.ClusterCfgFile,
+		KsEnable:          false,
+		Debug:             o.CommonOptions.Verbose,
+		IgnoreErr:         o.CommonOptions.IgnoreErr,
+		SkipConfirmCheck:  o.CommonOptions.SkipConfirmCheck,
+		SkipPullImages:    o.SkipPullImages,
+		ContainerManager:  o.ContainerManager,
+		Artifact:          o.Artifact,
+		InstallPackages:   o.InstallPackages,
+		IsAicpCluster:     o.IsAicpCluster,
+		IsSkipSystemCheck: o.IsSkipSystemCheck,
+		Namespace:         o.CommonOptions.Namespace,
 	}
 	return pipelines.AddNodes(arg, o.DownloadCmd)
 }
@@ -92,4 +94,5 @@ func (o *AddNodesOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.Artifact, "artifact", "a", "", "Path to a KubeKey artifact")
 	cmd.Flags().BoolVarP(&o.InstallPackages, "with-packages", "", false, "install operation system packages by artifact")
 	cmd.Flags().BoolVarP(&o.IsAicpCluster, "is-aicp-cluster", "", false, "add nodes to a aicp cluster")
+	cmd.Flags().BoolVarP(&o.IsSkipSystemCheck, "is-skip-system-check", "", false, "Skip system check")
 }

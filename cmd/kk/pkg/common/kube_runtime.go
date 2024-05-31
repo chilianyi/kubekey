@@ -50,6 +50,7 @@ type Argument struct {
 	Artifact            string
 	InstallPackages     bool
 	IsAicpCluster	    bool
+	IsSkipSystemCheck	bool
 	ImagesDir           string
 	Namespace           string
 	DeleteCRI           bool
