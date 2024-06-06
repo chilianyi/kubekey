@@ -96,7 +96,7 @@ echo 'fs.pipe-max-size = 4194304' >> /etc/sysctl.conf
 echo 'fs.aio-max-nr = 262144' >> /etc/sysctl.conf
 echo 'kernel.pid_max = 65535' >> /etc/sysctl.conf
 echo 'kernel.watchdog_thresh = 5' >> /etc/sysctl.conf
-echo 'kernel.hung_task_timeout_secs = 5' >> /etc/sysctl.conf
+#echo 'kernel.hung_task_timeout_secs = 5' >> /etc/sysctl.conf
 
 #add for ipv6
 echo 'net.ipv6.conf.all.disable_ipv6 = 0' >> /etc/sysctl.conf
