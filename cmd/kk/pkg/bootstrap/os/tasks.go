@@ -18,7 +18,6 @@ package os
 
 import (
 	"fmt"
-	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/core/util"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,6 +29,7 @@ import (
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/bootstrap/os/repository"
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/common"
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/core/connector"
+	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/core/util"
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/utils"
 	"github.com/kubesphere/kubekey/v3/util/osrelease"
 )
@@ -773,6 +773,9 @@ func (g *ConfigAicpDataDir) Execute(runtime connector.Runtime) error {
 	if currentHost.ZfsDataDisk == nil || len(currentHost.ZfsDataDisk) == 0 {
 		return nil
 	}
+
+	modprobeCmd := "modprobe zfs"
+	runtime.GetRunner().SudoCmd(modprobeCmd, false)
 
 	if !isZfsPoolCreated(runtime, common.AicpZpoolName) {
 		zfsCmd := fmt.Sprintf("zpool create %s %s", common.AicpZpoolName, strings.Join(currentHost.ZfsDataDisk, " "))
