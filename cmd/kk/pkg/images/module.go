@@ -59,6 +59,7 @@ func (c *CopyImagesToLocalModule) Init() {
 		Name:   "SaveImages",
 		Desc:   "Copy images to a local OCI path from registries",
 		Action: new(SaveImages),
+		Retry:  10,
 	}
 
 	c.Tasks = []task.Interface{
