@@ -126,3 +126,8 @@ aicp:
   - libnccl2=2.21.5-1+cuda12.4
   - libnccl-dev=2.21.5-1+cuda12.4
   - nvidia-fabricmanager-550
+
+aicp-20-04:
+  - nvidia-container-toolkit
+  - zfsutils-linux
+  - pigz

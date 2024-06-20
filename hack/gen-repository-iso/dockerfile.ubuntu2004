@@ -1,8 +1,8 @@
-FROM ubuntu:20.04 as ubuntu2004
+FROM hub.kubesphere.com.cn/aicp/library/ubuntu:20.04 as ubuntu2004
 ARG TARGETARCH
 ARG OS_RELEASE=focal
 ARG DIR=ubuntu-20.04-${TARGETARCH}-debs
-ARG PKGS=.common[],.debs[],.ubuntu[],.ubuntu2004[]
+ARG PKGS=.common[],.debs[],.ubuntu[],.ubuntu2004[],.aicp-20-04[]
 ARG BUILD_TOOLS="apt-transport-https software-properties-common ca-certificates curl wget gnupg dpkg-dev genisoimage"
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -15,10 +15,17 @@ RUN apt update -qq \
     && echo "deb [arch=$TARGETARCH] https://download.docker.com/linux/ubuntu ${OS_RELEASE} stable" > /etc/apt/sources.list.d/docker.list\
     && apt update -qq
 
+RUN curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+  && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+RUN apt update -qq
+
 WORKDIR /package
 COPY packages.yaml .
 
-COPY --from=mikefarah/yq:4.11.1 /usr/bin/yq /usr/bin/yq
+COPY --from=hub.kubesphere.com.cn/aicp/mikefarah/yq:4.11.1 /usr/bin/yq /usr/bin/yq
 RUN yq eval "${PKGS}" packages.yaml >> packages.list \
     && sort -u packages.list | xargs apt-get install --yes --reinstall --print-uris | awk -F "'" '{print $2}' | grep -v '^$' | sort -u > packages.urls
 
