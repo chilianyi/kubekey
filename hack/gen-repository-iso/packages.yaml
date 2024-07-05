@@ -1,4 +1,3 @@
----
 common:
   - curl
   - ceph-common
@@ -38,7 +37,7 @@ debs:
   - openssh-server
   - software-properties-common
   - sudo
-
+  - pciutils
 centos:
   - containerd.io
 
